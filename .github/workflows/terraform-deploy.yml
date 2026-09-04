@@ -1,0 +1,120 @@
+name: Deploy DC-AVD
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "envs/dc-avd/**"
+      - ".github/workflows/terraform-deploy.yml"
+  push:
+    branches: [main]
+    paths:
+      - "envs/dc-avd/**"
+      - ".github/workflows/terraform-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "plan or apply"
+        required: true
+        default: "plan"
+        type: choice
+        options: [plan, apply]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: terraform-dc-avd
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.7.5"
+  TF_IN_AUTOMATION: "true"
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_USE_OIDC: "true"
+  TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+  TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  TF_VAR_dc_admin_password: ${{ secrets.DC_ADMIN_PASSWORD }}
+  TF_VAR_avd_admin_password: ${{ secrets.AVD_ADMIN_PASSWORD }}
+  TF_VAR_shared_key: ${{ secrets.VPN_SHARED_KEY }}
+
+jobs:
+  terraform:
+    name: Plan and deploy dc-avd
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: envs/dc-avd
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          terraform init -input=false -reconfigure \
+            -backend-config="resource_group_name=${{ secrets.TFSTATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=ferragon-dc-avd.tfstate" \
+            -backend-config="use_oidc=true"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          set +e
+          terraform plan -no-color -input=false -out=tfplan 2>&1 | tee plan.txt
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=${exit_code}" >> "$GITHUB_OUTPUT"
+          exit "$exit_code"
+        continue-on-error: true
+
+      - name: Post plan to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const planPath = path.join(process.env.GITHUB_WORKSPACE, 'envs', 'dc-avd', 'plan.txt');
+            const plan = fs.existsSync(planPath) ? fs.readFileSync(planPath, 'utf8') : 'Terraform plan did not produce output.';
+            const body = `#### Terraform Plan - \`dc-avd\`\n\n\`\`\`text\n${plan.slice(0, 60000)}\n\`\`\``;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Fail if plan errored
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "Terraform plan failed with exit code ${{ steps.plan.outputs.exit_code }}."
+          exit 1
+
+      - name: Terraform Apply
+        if: steps.plan.outcome == 'success' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply'))
+        run: terraform apply -input=false -auto-approve tfplan
