@@ -4,6 +4,7 @@ resource "azurerm_public_ip" "vpngw" {
   resource_group_name = azurerm_resource_group.this.name
   allocation_method   = var.vpn_settings.public_ip_allocation_method
   sku                 = var.vpn_settings.public_ip_sku
+  zones               = var.vpn_settings.public_ip_zones
   tags                = var.tags
 }
 

@@ -1,7 +1,7 @@
 tenant_id       = "1c8672ad-d9cc-4f59-b839-90be132d96ab"
 subscription_id = "a011ac46-a4b0-4d1a-a49a-24f4088483a0"
 
-location = "centralus"
+location = "centralindia"
 
 tags = {
   project     = "Ferragon"
@@ -51,15 +51,15 @@ resource_names = {
 
 vnet_address_space = ["10.10.0.0/16"]
 subnet_config = {
-  "snet-dc"       = "10.10.1.0/24"
-  "snet-avd"      = "10.10.2.0/24"
-  "snet-firewall" = "10.10.3.0/26"
-  "GatewaySubnet" = "10.10.255.0/27"
+  "snet-dc"             = "10.10.1.0/24"
+  "snet-avd"            = "10.10.2.0/24"
+  "AzureFirewallSubnet" = "10.10.3.0/26"
+  "GatewaySubnet"       = "10.10.255.0/27"
 }
 subnet_keys = {
   dc       = "snet-dc"
   avd      = "snet-avd"
-  firewall = "snet-firewall"
+  firewall = "AzureFirewallSubnet"
   gateway  = "GatewaySubnet"
 }
 
@@ -79,6 +79,7 @@ dc_settings = {
   image_offer                    = "WindowsServer"
   image_sku                      = "2022-datacenter-azure-edition"
   image_version                  = "latest"
+  zone                           = "1"
 }
 
 frontdoor = {
@@ -110,12 +111,12 @@ frontdoor = {
 
 avd_host_pools = {
   "hp-20users" = {
-    vm_size               = "Standard_D8s_v5"
+    vm_size               = "Standard_D4s_v5"
     session_host_count    = 2
     max_sessions_per_host = 10
   }
   "hp-15users" = {
-    vm_size               = "Standard_D8s_v5"
+    vm_size               = "Standard_D4s_v5"
     session_host_count    = 1
     max_sessions_per_host = 8
   }
@@ -150,6 +151,7 @@ avd_settings = {
   agent_auto_upgrade_minor     = true
   agent_modules_url            = "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_1.0.02714.342.zip"
   agent_configuration_function = "Configuration.ps1\\AddSessionHost"
+  zone                         = "1"
 }
 
 files_provisioned_gb = 300
@@ -176,7 +178,7 @@ firewall_settings = {
   protocols                   = ["TCP", "UDP"]
 }
 
-vpn_gateway_sku          = "VpnGw1"
+vpn_gateway_sku          = "VpnGw1AZ"
 onprem_gateway_public_ip = "203.0.113.1"
 onprem_address_space     = ["192.168.0.0/16"]
 vpn_settings = {
@@ -186,6 +188,7 @@ vpn_settings = {
   vpn_type                    = "RouteBased"
   private_ip_allocation       = "Dynamic"
   connection_type             = "IPsec"
+  public_ip_zones             = ["1", "2", "3"]
 }
 
 backup_settings = {

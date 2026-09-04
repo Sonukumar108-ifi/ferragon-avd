@@ -1,5 +1,5 @@
 variable "location" {
-  description = "Primary Azure region (BOQ: Central US)"
+  description = "Primary Azure region"
   type        = string
 }
 
@@ -104,11 +104,12 @@ variable "dc_settings" {
     image_offer                    = string
     image_sku                      = string
     image_version                  = string
+    zone                           = string
   })
 }
 
 # ---------------------------------------------------------------------------
-# VPN Gateway (BOQ: VpnGw1, site-to-site to on-prem)
+# VPN Gateway 
 # ---------------------------------------------------------------------------
 variable "vpn_gateway_sku" {
   type = string
@@ -133,13 +134,13 @@ variable "vpn_settings" {
     vpn_type                    = string
     private_ip_allocation       = string
     connection_type             = string
+    public_ip_zones             = list(string)
   })
 }
 
 # ---------------------------------------------------------------------------
 # Azure Virtual Desktop
-# BOQ has three distinct pooled host pools: 20 users (D8s_v5) x2 duplicate
-# line items collapsed into one pool, 15 users (D8s_v5), 10 users (D4s_v5)
+#
 # ---------------------------------------------------------------------------
 variable "avd_host_pools" {
   description = "Map of AVD pooled host pools to deploy, keyed by pool name"
@@ -179,11 +180,12 @@ variable "avd_settings" {
     agent_auto_upgrade_minor     = bool
     agent_modules_url            = string
     agent_configuration_function = string
+    zone                         = string
   })
 }
 
 # ---------------------------------------------------------------------------
-# Azure Files (BOQ: Premium SSD, Provisioned v2, 300 GiB)
+# Azure Files
 # ---------------------------------------------------------------------------
 variable "files_provisioned_gb" {
   type = number

@@ -1,7 +1,7 @@
 tenant_id       = "1c8672ad-d9cc-4f59-b839-90be132d96ab"
 subscription_id = "a011ac46-a4b0-4d1a-a49a-24f4088483a0"
 
-location = "eastus2"
+location = "centralindia"
 
 tags = {
   project     = "Ferragon"
@@ -87,12 +87,12 @@ asr_sites = {
   primary = {
     fabric_name    = "fabric-primary"
     container_name = "container-primary"
-    location       = "centralus"
+    location       = "centralindia"
   }
   dr = {
     fabric_name    = "fabric-dr"
     container_name = "container-dr"
-    location       = "eastus2"
+    location       = "centralindia"
   }
 }
 site_recovery_settings = {

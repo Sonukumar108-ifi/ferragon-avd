@@ -1,5 +1,5 @@
 variable "location" {
-  description = "DR region (BOQ: East US 2)"
+  description = "DR Azure region"
   type        = string
 }
 

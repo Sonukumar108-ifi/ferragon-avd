@@ -86,6 +86,7 @@ resource "azurerm_windows_virtual_machine" "avd" {
   size                = each.value.vm_size
   admin_username      = var.avd_admin_username
   admin_password      = random_password.avd_admin.result
+  zone                = var.avd_settings.zone
   tags                = merge(var.tags, { avd_host_pool = each.value.pool_name })
 
   network_interface_ids = [azurerm_network_interface.avd[each.key].id]

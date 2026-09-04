@@ -38,9 +38,6 @@ env:
   ARM_USE_OIDC: "true"
   TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
   TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-  TF_VAR_dc_admin_password: ${{ secrets.DC_ADMIN_PASSWORD }}
-  TF_VAR_avd_admin_password: ${{ secrets.AVD_ADMIN_PASSWORD }}
-  TF_VAR_shared_key: ${{ secrets.VPN_SHARED_KEY }}
 
 jobs:
   terraform:
@@ -68,13 +65,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Terraform Init
-        run: |
-          terraform init -input=false -reconfigure \
-            -backend-config="resource_group_name=${{ secrets.TFSTATE_RG }}" \
-            -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
-            -backend-config="container_name=tfstate" \
-            -backend-config="key=ferragon-dc-avd.tfstate" \
-            -backend-config="use_oidc=true"
+        run: terraform init -input=false -reconfigure
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive

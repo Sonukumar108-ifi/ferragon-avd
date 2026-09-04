@@ -20,6 +20,7 @@ resource "azurerm_windows_virtual_machine" "dc" {
   admin_username      = var.dc_admin_username
   admin_password      = random_password.dc_admin.result
   license_type        = var.dc_settings.license_type
+  zone                = var.dc_settings.zone
   tags                = var.tags
 
   network_interface_ids = [azurerm_network_interface.dc.id]
